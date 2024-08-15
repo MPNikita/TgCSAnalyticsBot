@@ -1,0 +1,3 @@
+Python 3.10.12
+aiogram 3.11.0
+python-dotenv 1.0.1
