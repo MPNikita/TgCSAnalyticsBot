@@ -4,6 +4,7 @@
 # id_tournament, name, date_begin, date_end
 data_tournament = [{'id_tournament': 1203918, 'name': 'Katowice 2024'},
                    {'id_tournament': 213, 'name': 'Moscow 2024'},
+                   {'id_tournament': 123, 'name': 'London 2024'},
                    ]
 
 # id_match, first_team, second_team, result [0 - TBD, 1 - first_team, 2 - second_team]
