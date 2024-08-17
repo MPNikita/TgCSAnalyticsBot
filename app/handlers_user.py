@@ -41,9 +41,15 @@ async def predict_macth(callbackquery: CallbackQuery):
     _, match_id, result = callbackquery.data.split('_')
     #todo: save predict
     await callbackquery.answer('Predict Saved')
-    await callbackquery.message.answer('Choose winner of the match', reply_markup =await kb.predict_match(int(match_id)))
+    await callbackquery.message.edit_text('Choose winner of the match', reply_markup =await kb.predict_match(int(match_id)))
 
 
-@router_user.message((F.text == 'Back to menu') | (F.data == 'Menu'))
-async def back_to_menu(message: Message):
+@router_user.message(F.text == 'Back to menu')
+async def back_to_menu1(message: Message):
     await message.answer("Menu", reply_markup = kb.main)
+
+
+@router_user.callback_query(F.data == 'Menu')
+async def back_to_menu2(callbackquery: CallbackQuery):
+    await callbackquery.answer('')
+    await callbackquery.message.answer("Menu", reply_markup = kb.main)

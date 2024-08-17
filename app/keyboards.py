@@ -31,7 +31,6 @@ async def predict_first_match(tournament_id: int):
     match_id = match['id']
     keyboard.button(text = match['first_team'], callback_data = f'predict_{match_id}_{1}')
     keyboard.button(text = match['second_team'], callback_data = f'predict_{match_id}_{2}')
-    keyboard.button(text = 'skip', callback_data = f'predict_{match_id}_{0}')
     return keyboard.adjust(2).as_markup()
 
 
@@ -51,11 +50,10 @@ async def predict_match(match_id: int):
             match = match_it
             break
     else:
-        keyboard.button(text = 'Prediction is completed', callback_data = 'menu')
+        keyboard.button(text = 'Go to menu', callback_data = 'Menu')
         return keyboard.as_markup()
     
     match_id = match['id']
     keyboard.button(text = match['first_team'], callback_data = f'predict_{match_id}_{1}')
     keyboard.button(text = match['second_team'], callback_data = f'predict_{match_id}_{2}')
-    keyboard.button(text = 'skip', callback_data = f'predict_{match_id}_{0}')
     return keyboard.adjust(2).as_markup()
