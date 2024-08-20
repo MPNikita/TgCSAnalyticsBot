@@ -2,7 +2,12 @@ from sqlalchemy.orm import Mapped, DeclarativeBase, mapped_column
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncAttrs, async_sessionmaker
 from sqlalchemy import BigInteger, String, ForeignKey
 
-engine = create_async_engine("mysql+aiomysql://u127666_MmU6Ruk9Vt:HkPPY4S%3DNs.5a2Ofn%40POYbsj@mysql.db.bot-hosting.net:3306/s127666_Test")
+import os
+from dotenv import load_dotenv
+
+
+load_dotenv()
+engine = create_async_engine(url=os.getenv('DB_URL'))
 async_session = async_sessionmaker(engine)
 
 
