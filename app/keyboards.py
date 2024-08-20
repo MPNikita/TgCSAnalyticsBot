@@ -4,19 +4,19 @@ import database.requests as rq
 
 
 main = ReplyKeyboardMarkup(keyboard = [
-    [KeyboardButton(text='Make Prediction')],
-    [KeyboardButton(text='Leaderboard'), KeyboardButton(text='About Us')]
+    [KeyboardButton(text='Провести мощнейшую аналитику')],
+    [KeyboardButton(text='Рейтинг аналитиков'), KeyboardButton(text='О нас')]
 ],
                                 resize_keyboard=True,
-                                input_field_placeholder='Choose from menu')
+                                input_field_placeholder='Выберите один из пунктов')
 
 async def choose_tournament():
     keyboard = ReplyKeyboardBuilder()
-    data_tournament = await rq.ongoing_tournaments()
+    data_tournament = await rq.opened_tournaments()
     for tournament in data_tournament:
         keyboard.add(KeyboardButton(text = tournament.name))
     keyboard.adjust(2)
-    keyboard.row(KeyboardButton(text = "Back to menu"))
+    keyboard.row(KeyboardButton(text = "Вернуться в меню"))
     return keyboard.as_markup(resize_keyboard = True)
 
 
@@ -34,3 +34,21 @@ async def predict_match(tournament_id, match_local_id):
     keyboard.button(text = local_match.team_1, callback_data = f'predict_{local_match.id}_{tournament_id}_{match_local_id}_{1}_{exists_next}')
     keyboard.button(text = local_match.team_2, callback_data = f'predict_{local_match.id}_{tournament_id}_{match_local_id}_{2}_{exists_next}')
     return keyboard.adjust(2).as_markup()
+
+
+async def open_tournament():
+    keyboard = ReplyKeyboardBuilder()
+    data_tournament = await rq.closed_tournaments()
+    for tournament in data_tournament:
+        keyboard.add(KeyboardButton(text = tournament.name))
+    keyboard.adjust(1)
+    return keyboard.as_markup()
+
+
+async def close_tournament():
+    keyboard = ReplyKeyboardBuilder()
+    data_tournament = await rq.opened_tournaments()
+    for tournament in data_tournament:
+        keyboard.add(KeyboardButton(text = tournament.name))
+    keyboard.adjust(1)
+    return keyboard.as_markup()

@@ -4,7 +4,7 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext 
 
-from app.texts import START, HELP
+from app.texts import START, HELP, ABOUT_US
 import app.keyboards as kb
 import database.requests as rq
 
@@ -28,49 +28,51 @@ async def cmd_help(message: Message):
     await message.answer(HELP, reply_markup = kb.main)
 
 
-@router_user.message(F.text == 'Make Prediction')
+@router_user.message(F.text == 'Провести мощнейшую аналитику')
 async def show_tournaments(message: Message, state: FSMContext):
-    await state.set_state(InitPred.init)
-    await message.answer('Choose tournaments', reply_markup =await kb.choose_tournament())
+    tornaments = list(await rq.opened_tournaments())
+    if not tornaments:
+        await message.answer('Нет турниров для проведения мощнейшей аналитики', reply_markup = kb.main)
+    else:
+        await state.set_state(InitPred.init)
+        await message.answer('Выберите турнир', reply_markup =await kb.choose_tournament())
 
 
 @router_user.message(InitPred.init) 
-async def first_predict(message: Message, state: FSMContext):
+async def choose_tournament(message: Message, state: FSMContext):
     tournament = await rq.find_tournament_by_name(message.text)
     await state.clear()
-    await message.answer('Choose winner of the match', reply_markup =await kb.predict_match(tournament.id, 0))
+    if message.text != "Вернуться в меню":
+        await message.answer('Кто победит?', reply_markup =await kb.predict_match(tournament.id, 0))
+    else:
+        await message.answer(text = 'Меню', reply_markup = kb.main)
 
 
 @router_user.callback_query(F.data.contains('predict'))
 async def predict_macth(callbackquery: CallbackQuery):
     _, match_id, tournament_id, match_local_id, result, exists_next = callbackquery.data.split('_')
     await rq.new_predict(callbackquery.from_user.id, int(match_id), int(result))
-    await callbackquery.answer('Predict Saved')
+    await callbackquery.answer('Прогноз сохранен')
 
     if exists_next == 'no':
-        await callbackquery.message.answer('All predicts on this tournament are made', reply_markup = kb.main)
+        await callbackquery.message.answer('Все прогнозы на этот турнир сделаны', reply_markup = kb.main)
         return
     
     match_local_id = int(match_local_id) + 1
-    await callbackquery.message.edit_text('Choose winner of the match', reply_markup =await kb.predict_match(int(tournament_id), int(match_local_id)))
+    await callbackquery.message.edit_text('Кто победит?', reply_markup =await kb.predict_match(int(tournament_id), int(match_local_id)))
 
 
-@router_user.message(F.text == 'Back to menu')
-async def back_to_menu1(message: Message):
-    await message.answer("Menu", reply_markup = kb.main)
-
-
-@router_user.message(F.text == 'Leaderboard')
+@router_user.message(F.text == 'Рейтинг аналитиков')
 async def show_leaderboard(message: Message):
-    await message.answer("Sorry, function is underconstraction")
+    await message.answer("Рейтинг временно недоступен")
 
 
-@router_user.message(F.text == 'About Us')
+@router_user.message(F.text == 'О нас')
 async def show_about_us(message: Message):
-    await message.answer("Sorry, function is underconstraction")
+    await message.answer(ABOUT_US)
 
 
-@router_user.callback_query(F.data == 'Menu')
+@router_user.callback_query(F.data == 'Меню')
 async def back_to_menu2(callbackquery: CallbackQuery):
     await callbackquery.answer('')
-    await callbackquery.message.answer("Menu", reply_markup = kb.main)
+    await callbackquery.message.answer("Меню", reply_markup = kb.main)

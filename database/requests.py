@@ -14,35 +14,59 @@ async def new_user(tg_id, username):
 
 async def new_predict(tg_id, match_id, result):
     async with async_session() as session:
-        predict = await session.scalar(select(Predict).where(Predict.match_id == match_id))
-
+        user = await session.scalar(select(User).where(User.tg_id == tg_id))
+        predict = await session.scalar(select(Predict).where(Predict.match_id == match_id, Predict.user_id == user.id))
+        
         if not predict:
-            user = await session.scalar(select(User).where(User.tg_id == tg_id))
             session.add(Predict(user_id = user.id, match_id = match_id, result = result))
         else:
             await session.execute(update(Predict).values(result = result).where(Predict.id == predict.id))
         await session.commit()
 
 
-async def new_tournament(tg_id, match_id, result):
+async def new_tournament(name):
     async with async_session() as session:
-        predict = await session.scalar(select(Predict).where(Predict.match_id == match_id))
+        tournament = await session.scalar(select(Tournament).where(Tournament.name == name))
 
-        if not predict:
-            user = await session.scalar(select(User).where(User.tg_id == tg_id))
-            """ session.add(Predict(user_id = user.id))
-            session.add(Predict(match_id = match_id))
-            session.add(Predict(result = result)) """
+        if not tournament:
+            session.add(Tournament(name = name, state = 'Open'))
             await session.commit()
-        else:
-            await session.execute(update(Predict).values(result = result).where(Predict.id == predict.id))
+            return "Tournament made!"
+        return "Tournament exists!"
+    
+
+async def new_match(name, team1, team2):
+    async with async_session() as session:
+        try:
+            tournament = await session.scalar(select(Tournament).where(Tournament.name == name))
+            session.add(Match(tournament_id = tournament.id, team_1 = team1, team_2 = team2, result = 0))
+            await session.commit()
+            return "Match Added"
+        except:
+            return "Wrong tournament!!! Try again"
 
 
-
-async def ongoing_tournaments():
+async def opened_tournaments():
     async with async_session() as session:
         return await session.scalars(select(Tournament).where(Tournament.state == 'Open'))
     
+
+async def closed_tournaments():
+    async with async_session() as session:
+        return await session.scalars(select(Tournament).where(Tournament.state == 'Close'))
+
+
+async def open_tournament(name):
+    async with async_session() as session:
+        await session.execute(update(Tournament).values(state = "Open").where(Tournament.name == name))
+        await session.commit()
+    
+
+async def close_tournament(name):
+    async with async_session() as session:
+        await session.execute(update(Tournament).values(state = "Close").where(Tournament.name == name))
+        await session.commit()
+
 
 async def matches_to_predict(tournament_id):
     async with async_session() as session:
