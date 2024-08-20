@@ -76,3 +76,8 @@ async def show_about_us(message: Message):
 async def back_to_menu2(callbackquery: CallbackQuery):
     await callbackquery.answer('')
     await callbackquery.message.answer("Меню", reply_markup = kb.main)
+
+
+@router_user.message(F.text == 'Вернуться в меню')
+async def back_to_menu2(message: Message):
+    await message.answer("Меню", reply_markup = kb.main)
