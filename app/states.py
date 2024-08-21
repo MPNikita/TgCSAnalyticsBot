@@ -29,3 +29,7 @@ class MatchStats(StatesGroup):
 class MatchUpdate(StatesGroup):
     show_stats = State()
     match_upd = State()
+
+
+class ShowLeaders(StatesGroup):
+    show_lead = State()

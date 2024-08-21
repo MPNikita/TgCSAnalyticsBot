@@ -124,4 +124,24 @@ async def update_match(match_id, result):
             else:
                 await session.execute(update(LeaderboardTournament).values(correct_predictions = tour_lead.correct_predictions + result_of_predict, number_of_predictions = tour_lead.number_of_predictions + 1).where(LeaderboardTournament.tournament_id == match_.tournament_id).where(LeaderboardTournament.user_id == pred.user_id))
         
-        await session.commit() 
+        await session.commit()
+
+
+async def get_tournaments():
+    async with async_session() as session:
+        return await session.scalars(select(Tournament))
+    
+
+async def get_leaderboard(name):
+    async with async_session() as session:
+        tournament = await session.scalar(select(Tournament).where(Tournament.name == name))
+        
+        if not tournament:
+            return await session.scalars(select(LeaderboardMain).order_by(LeaderboardMain.correct_predictions.desc(), LeaderboardMain.number_of_predictions))
+        
+        return await session.scalars(select(LeaderboardTournament).where(LeaderboardTournament.tournament_id == tournament.id).order_by(LeaderboardTournament.correct_predictions.desc(), LeaderboardTournament.number_of_predictions))
+
+
+async def get_user_by_id(id):
+    async with async_session() as session:
+        return await session.scalar(select(User).where(User.id == id))

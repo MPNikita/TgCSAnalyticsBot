@@ -70,3 +70,13 @@ async def choose_result(id, team1, team2):
     keyboard.add(KeyboardButton(text = f'Выиграли {team2}; id:{id}; 2'))
     keyboard.adjust(1)
     return keyboard.as_markup(resize_keyboard = True)
+
+
+async def show_leaderboards():
+    keyboard = ReplyKeyboardBuilder()
+    tournaments = await rq.get_tournaments()
+    keyboard.add(KeyboardButton(text = "Мощнейший всеобщий топ"))
+    for tournament in tournaments:
+        keyboard.add(KeyboardButton(text = tournament.name))
+    keyboard.adjust(1)
+    return keyboard.as_markup(resize_keyboard = True)

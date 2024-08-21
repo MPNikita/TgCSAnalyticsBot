@@ -1,8 +1,7 @@
 from aiogram import Router
-from aiogram.filters import Command, CommandStart
+from aiogram.filters import Command
 from aiogram.types import Message, ReplyKeyboardRemove
 from app.config import ADMINS
-from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext 
 import database.requests as rq
 import app.keyboards as kb

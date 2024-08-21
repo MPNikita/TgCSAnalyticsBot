@@ -1,7 +1,6 @@
 from aiogram import Router, F
 from aiogram.filters import Command, CommandStart
 from aiogram.types import Message, CallbackQuery
-from aiogram.fsm.state import State
 from aiogram.fsm.context import FSMContext 
 
 from app.texts import START, HELP, ABOUT_US
@@ -60,8 +59,30 @@ async def predict_macth(callbackquery: CallbackQuery):
 
 
 @router_user.message(F.text == 'Рейтинг аналитиков')
-async def show_leaderboard(message: Message):
-    await message.answer("Рейтинг временно недоступен")
+async def show_leaderboard_1(message: Message, state: FSMContext):
+    await state.set_state(st.ShowLeaders.show_lead)
+    await message.answer("Выберите нужный топ", reply_markup = await kb.show_leaderboards()) #NEED CHANGING
+
+
+@router_user.message(st.ShowLeaders.show_lead) 
+async def show_leaderboard_2(message: Message, state: FSMContext):
+    await state.clear()
+    top = await rq.get_leaderboard(message.text)
+
+    if message.text == "Мощнейший всеобщий топ":
+        top_text = "Мощнейший всеобщий топ\n"
+    else:
+        top_text = f"Мощнейший топ {message.text}\n"
+
+    place = 1
+    for user_top in top:
+        wr = user_top.correct_predictions / user_top.number_of_predictions * 100
+        user = await rq.get_user_by_id(user_top.user_id)
+        top_str = f'{place}. @{user.username} {user_top.correct_predictions}/{user_top.number_of_predictions} {wr:.2f}%\n'
+        top_text += top_str
+        place += 1
+    
+    await message.answer(text = top_text, reply_markup = kb.main)
 
 
 @router_user.message(F.text == 'О нас')
