@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 async def main():
     await async_main()
     load_dotenv()
-    bot = Bot(token=os.getenv('TEST_TOKEN'))
+    bot = Bot(token=os.getenv('TOKEN'))
     dp = Dispatcher()
     dp.include_routers(router_user, router_admin)
     await dp.start_polling(bot)
