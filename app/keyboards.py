@@ -10,6 +10,7 @@ main = ReplyKeyboardMarkup(keyboard = [
                                 resize_keyboard=True,
                                 input_field_placeholder='Выберите один из пунктов')
 
+
 async def choose_tournament():
     keyboard = ReplyKeyboardBuilder()
     data_tournament = await rq.opened_tournaments()
@@ -42,7 +43,7 @@ async def open_tournament():
     for tournament in data_tournament:
         keyboard.add(KeyboardButton(text = tournament.name))
     keyboard.adjust(1)
-    return keyboard.as_markup()
+    return keyboard.as_markup(resize_keyboard = True)
 
 
 async def close_tournament():
@@ -51,4 +52,21 @@ async def close_tournament():
     for tournament in data_tournament:
         keyboard.add(KeyboardButton(text = tournament.name))
     keyboard.adjust(1)
-    return keyboard.as_markup()
+    return keyboard.as_markup(resize_keyboard = True)
+
+
+async def open_matches():
+    keyboard = ReplyKeyboardBuilder()
+    opened_matches = await rq.opened_matches()
+    for match_ in opened_matches:
+        keyboard.add(KeyboardButton(text = f'id: {match_.id};{match_.team_1} vs {match_.team_2}'))
+    keyboard.adjust(1)
+    return keyboard.as_markup(resize_keyboard = True)
+
+
+async def choose_result(id, team1, team2):
+    keyboard = ReplyKeyboardBuilder()
+    keyboard.add(KeyboardButton(text = f'Выиграли {team1}; id:{id}; 1'))
+    keyboard.add(KeyboardButton(text = f'Выиграли {team2}; id:{id}; 2'))
+    keyboard.adjust(1)
+    return keyboard.as_markup(resize_keyboard = True)

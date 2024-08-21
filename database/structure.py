@@ -50,12 +50,24 @@ class Predict(Base):
     result: Mapped[int] = mapped_column()
 
 
-""" class Leaderboard(Base):
-    __tablename__ = 'leaderboard'
+class LeaderboardMain(Base):
+    __tablename__ = 'all_leaderboard'
 
-    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
     correct_predictions: Mapped[int] = mapped_column()
-    number_of_predictions: Mapped[int] = mapped_column() """
+    number_of_predictions: Mapped[int] = mapped_column()
+
+
+class LeaderboardTournament(Base):
+    __tablename__ = 'leaders_by_tour'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    tournament_id: Mapped[int] = mapped_column(ForeignKey('tournaments.id'))
+    correct_predictions: Mapped[int] = mapped_column()
+    number_of_predictions: Mapped[int] = mapped_column()
+
 
 async def async_main():
     async with engine.begin() as conn:

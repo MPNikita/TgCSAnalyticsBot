@@ -1,32 +1,15 @@
 from aiogram import Router
 from aiogram.filters import Command, CommandStart
-from aiogram.types import Message
+from aiogram.types import Message, ReplyKeyboardRemove
 from app.config import ADMINS
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext 
 import database.requests as rq
 import app.keyboards as kb
+import app.states as st
 
 
 router_admin = Router()
-
-
-class TournamentCreation(StatesGroup):
-    name = State()
-
-
-class MatchCreation(StatesGroup):
-    team1 = State()
-    team2 = State()
-    creation = State()
-
-
-class OpenPredicts(StatesGroup):
-    open_ = State()
-
-
-class ClosePredicts(StatesGroup):
-    close_ = State()
 
 
 async def admin_checker(id):
@@ -41,11 +24,11 @@ async def create_tournament_1(message: Message, state: FSMContext):
         await message.answer('No permission')
         return
     
-    await state.set_state(TournamentCreation.name)
-    await message.answer('Enter name of Tournament. Attention, enter only HLTV name of tournament')
+    await state.set_state(st.TournamentCreation.name)
+    await message.answer('Введите название турнира. Внимание, название турнира должно в точности повторять название турнира с hltv.org !!!')
 
 
-@router_admin.message(TournamentCreation.name)
+@router_admin.message(st.TournamentCreation.name)
 async def create_tournament_2(message: Message, state: FSMContext):
     await state.clear()
     await message.answer(text = await rq.new_tournament(message.text))
@@ -54,28 +37,28 @@ async def create_tournament_2(message: Message, state: FSMContext):
 @router_admin.message(Command('create_match'))
 async def create_match_1(message: Message, state: FSMContext):
     if not await admin_checker(message.from_user.id):
-        await message.answer('No permission')
+        await message.answer('Нет доступа')
         return
     
-    await state.set_state(MatchCreation.team1)
-    await message.answer('Enter name of Tournament. Attention, enter only HLTV name of tournament!')
+    await state.set_state(st.MatchCreation.team1)
+    await message.answer('Введите название турнира. Внимание, название турнира должно в точности повторять название турнира с hltv.org !!!')
 
 
-@router_admin.message(MatchCreation.team1)
+@router_admin.message(st.MatchCreation.team1)
 async def create_match_2(message: Message, state: FSMContext):
     await state.update_data(name = message.text)
-    await state.set_state(MatchCreation.team2)
-    await message.answer(text = "Enter name of first team from HLTV")
+    await state.set_state(st.MatchCreation.team2)
+    await message.answer(text = "Введите название первой команды, строго как на hltv.org !")
 
 
-@router_admin.message(MatchCreation.team2)
+@router_admin.message(st.MatchCreation.team2)
 async def create_match_2(message: Message, state: FSMContext):
     await state.update_data(team1 = message.text)
-    await state.set_state(MatchCreation.creation)
-    await message.answer(text = "Enter name of second team from HLTV")
+    await state.set_state(st.MatchCreation.creation)
+    await message.answer(text = "Введите название второй команды, строго как на hltv.org !")
 
 
-@router_admin.message(MatchCreation.creation)
+@router_admin.message(st.MatchCreation.creation)
 async def create_match_2(message: Message, state: FSMContext):
     await state.update_data(team2 = message.text)
     data = await state.get_data()
@@ -86,30 +69,86 @@ async def create_match_2(message: Message, state: FSMContext):
 @router_admin.message(Command('open_predicts'))
 async def open_1(message: Message, state: FSMContext):
     if not await admin_checker(message.from_user.id):
-        await message.answer('No permission')
+        await message.answer('Нет доступа')
         return
     
-    await state.set_state(OpenPredicts.open_)
-    await message.answer("Which tournament to open?", reply_markup = await kb.open_tournament())
+    await state.set_state(st.OpenPredicts.open_)
+    await message.answer("Прогнозы на какой турнир открыть?", reply_markup = await kb.open_tournament())
 
 
-@router_admin.message(OpenPredicts.open_)
+@router_admin.message(st.OpenPredicts.open_)
 async def open_2(message: Message, state: FSMContext):
     await rq.open_tournament(message.text)
-    await message.answer(text = "Tournament opened")
+    await message.answer(text = f"Прогнозы на {message.text} открыты!")
 
 
 @router_admin.message(Command('close_predicts'))
 async def close_1(message: Message, state: FSMContext):
     if not await admin_checker(message.from_user.id):
-        await message.answer('No permission')
+        await message.answer('Нет доступа')
         return
     
-    await state.set_state(ClosePredicts.close_)
-    await message.answer("Which tournament to close?", reply_markup = await kb.close_tournament())
+    await state.set_state(st.ClosePredicts.close_)
+    await message.answer("Прогнозы на какой турнир закрыть?", reply_markup = await kb.close_tournament())
 
 
-@router_admin.message(ClosePredicts.close_)
+@router_admin.message(st.ClosePredicts.close_)
 async def close_2(message: Message, state: FSMContext):
     await rq.close_tournament(message.text)
-    await message.answer(text = "Tournament closed")
+    await message.answer(text = f"Прогнозы на {message.text} закрыты!")
+
+
+@router_admin.message(Command('match_stats'))
+async def match_stats_1(message: Message, state: FSMContext):
+    await state.set_state(st.MatchStats.stats)
+    await message.answer(text = "Выберите матч для предоставления статистики!", 
+                         reply_markup = await kb.open_matches())
+
+
+@router_admin.message(st.MatchStats.stats)
+async def match_stats_2(message: Message, state: FSMContext):
+    await state.clear()
+    id_str, teams = message.text.split(';')
+    team1, team2 = teams.split(' vs ')
+    _, match_id = id_str.split(': ')
+    predicts = list(await rq.get_match_pred(int(match_id)))
+    stats = [0, len(predicts)]
+    for pred in predicts:
+        if pred.result == 1:
+            stats[0] += 1
+    wr_1 = stats[0] / stats[1] * 100
+    await message.answer(text = f"Сделано прогнозов: {stats[1]}\nПредсказали победу {team1}: {stats[0]} {wr_1:.2f}%\nПредсказали победу {team2}: {stats[1] -stats[0]} {100 - wr_1:.2f}%", 
+                         reply_markup = ReplyKeyboardRemove())
+
+
+@router_admin.message(Command('update_match'))
+async def update_match_1(message: Message, state: FSMContext):
+    await state.set_state(st.MatchUpdate.show_stats)
+    await message.answer(text = "Выберите матч для внесение результатов ", 
+                         reply_markup = await kb.open_matches())
+
+
+@router_admin.message(st.MatchUpdate.show_stats)
+async def update_match_2(message: Message, state: FSMContext):
+    await state.set_state(st.MatchUpdate.match_upd)
+    id_str, teams = message.text.split(';')
+    team1, team2 = teams.split(' vs ')
+    _, match_id = id_str.split(': ')
+    predicts = list(await rq.get_match_pred(int(match_id)))
+    stats = [0, len(predicts)]
+    for pred in predicts:
+        if pred.result == 1:
+            stats[0] += 1
+    wr_1 = stats[0] / stats[1] * 100
+    await message.answer(text = f"Сделано прогнозов: {stats[1]}\nПредсказали победу {team1}: {stats[0]} {wr_1:.2f}%\nПредсказали победу {team2}: {stats[1] -stats[0]} {100 - wr_1:.2f}%", 
+                         reply_markup = await kb.choose_result(int(match_id), team1, team2))
+
+
+@router_admin.message(st.MatchUpdate.match_upd)
+async def update_match_2(message: Message, state: FSMContext):
+    await state.clear()
+    _, id_str, result = message.text.split('; ')
+    _, match_id = id_str.split(':')
+    await rq.update_match(int(match_id), int(result))
+    await message.answer(text = f'Матч обновлен.\nMatch id: {match_id} result: {result}',
+                         reply_markup = ReplyKeyboardRemove())

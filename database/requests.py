@@ -1,5 +1,5 @@
 from database.structure import async_session
-from database.structure import User, Match, Predict, Tournament
+from database.structure import User, Match, Predict, Tournament, LeaderboardMain, LeaderboardTournament
 from sqlalchemy import select, update, delete
 
 
@@ -29,10 +29,10 @@ async def new_tournament(name):
         tournament = await session.scalar(select(Tournament).where(Tournament.name == name))
 
         if not tournament:
-            session.add(Tournament(name = name, state = 'Open'))
+            session.add(Tournament(name = name, state = 'Close'))
             await session.commit()
-            return "Tournament made!"
-        return "Tournament exists!"
+            return "Турнир добавлен!"
+        return "Турнир уже существует!"
     
 
 async def new_match(name, team1, team2):
@@ -41,9 +41,9 @@ async def new_match(name, team1, team2):
             tournament = await session.scalar(select(Tournament).where(Tournament.name == name))
             session.add(Match(tournament_id = tournament.id, team_1 = team1, team_2 = team2, result = 0))
             await session.commit()
-            return "Match Added"
+            return "Матч добавлен!"
         except:
-            return "Wrong tournament!!! Try again"
+            return "Турнир не найден, попробуйте снова!"
 
 
 async def opened_tournaments():
@@ -86,3 +86,42 @@ async def find_tournament_by_name(name):
 async def find_user_by_id(tg_id):
     async with async_session() as session:
         return await session.scalar(select(User).where(User.tg_id == tg_id))  
+
+
+async def opened_matches():
+    async with async_session() as session:
+        return await session.scalars(select(Match).where(Match.result == 0))
+    
+
+async def get_match_pred(match_id):
+    async with async_session() as session:
+        return await session.scalars(select(Predict).where(Predict.match_id == match_id))
+
+
+async def update_match(match_id, result):
+    async with async_session() as session:
+        await session.execute(update(Match).values(result = result).where(Match.id == match_id))
+        predicts = await session.scalars(select(Predict).where(Predict.match_id == match_id))
+        for pred in predicts:
+            #update main leaderboard
+            main_lead = await session.scalar(select(LeaderboardMain).where(LeaderboardMain.user_id == pred.user_id))
+            result_of_predict = 1 if pred.result == result else 0
+            if not main_lead:
+                session.add(LeaderboardMain(user_id = pred.user_id, 
+                                                  correct_predictions = result_of_predict,
+                                                  number_of_predictions = 1))
+            else:
+                await session.execute(update(LeaderboardMain).values(correct_predictions = main_lead.correct_predictions + result_of_predict, number_of_predictions = main_lead.number_of_predictions + 1).where(LeaderboardMain.user_id == pred.user_id))
+            
+            #update tournament leaderboard
+            tour_lead = await session.scalar(select(LeaderboardTournament).where(LeaderboardTournament.user_id == pred.user_id))
+            match_ = await session.scalar(select(Match).where(Match.id == pred.match_id))
+            if not tour_lead:
+                session.add(LeaderboardTournament(user_id = pred.user_id,
+                                                  tournament_id = match_.tournament_id,
+                                                  correct_predictions = result_of_predict,
+                                                  number_of_predictions = 1))
+            else:
+                await session.execute(update(LeaderboardTournament).values(correct_predictions = tour_lead.correct_predictions + result_of_predict, number_of_predictions = tour_lead.number_of_predictions + 1).where(LeaderboardTournament.tournament_id == match_.tournament_id).where(LeaderboardTournament.user_id == pred.user_id))
+        
+        await session.commit() 
