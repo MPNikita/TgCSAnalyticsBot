@@ -6,6 +6,8 @@ from aiogram.fsm.context import FSMContext
 import database.requests as rq
 import app.keyboards as kb
 import app.states as st
+import utils.funcs as ufuncs
+
 
 
 router_admin = Router()
@@ -157,5 +159,41 @@ async def update_match_3(message: Message, state: FSMContext):
     _, id_str, result = message.text.split('; ')
     _, match_id = id_str.split(':')
     await rq.update_match(int(match_id), int(result))
+    await ufuncs.update_text_tops(int(match_id))
     await message.answer(text = f'Матч обновлен.\nMatch id: {match_id} result: {result}',
+                         reply_markup = ReplyKeyboardRemove())
+    
+
+@router_admin.message(Command('broadcast_message'))
+async def broadcast_message_1(message: Message, state: FSMContext):
+    if not await admin_checker(message.from_user.id):
+        await message.answer('No permission')
+        return
+    
+    await state.set_state(st.Broadcast.got_msg)
+    await message.answer(text = "Пожалуйста, введите текст сообщения, которое хотите всем отправить")
+
+
+@router_admin.message(st.Broadcast.got_msg)
+async def broadcast_message_2(message: Message, state: FSMContext):
+    await state.update_data(got_msg = message.text)
+    await state.set_state(st.Broadcast.confirm)
+    await message.answer(text = message.text)
+    await message.answer(text = "Проверьте сообщение и подтвердите отправку", 
+                         reply_markup = kb.confirmation)
+    
+
+@router_admin.message(st.Broadcast.confirm)
+async def broadcast_message_3(message: Message, state: FSMContext):
+    if message.text == 'Отмена':
+        await message.answer(text = "Текст не отправлен", 
+                         reply_markup = ReplyKeyboardRemove())
+        await state.clear()
+
+    data = await state.get_data()
+    users = await rq.get_users_id()
+    for user in users:
+        await message.bot.send_message(user.tg_id, text = data['got_msg'])
+    await state.clear()
+    await message.answer(text = "Текст отправлен!", 
                          reply_markup = ReplyKeyboardRemove())

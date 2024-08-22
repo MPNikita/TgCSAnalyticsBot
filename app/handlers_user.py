@@ -1,6 +1,6 @@
 from aiogram import Router, F
 from aiogram.filters import Command, CommandStart
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 from aiogram.fsm.context import FSMContext 
 
 from app.texts import START, HELP, ABOUT_US
@@ -70,45 +70,22 @@ async def predict_macth(callbackquery: CallbackQuery, state: FSMContext):
 @router_user.message(F.text == 'Рейтинг аналитиков')
 async def show_leaderboard_1(message: Message, state: FSMContext):
     await state.set_state(st.ShowLeaders.show_lead)
-    await message.answer("Выберите нужный топ", reply_markup = await kb.show_leaderboards()) #NEED CHANGING
+    await message.answer("Выберите нужный топ", reply_markup = await kb.show_leaderboards())
 
 
 @router_user.message(st.ShowLeaders.show_lead) 
 async def show_leaderboard_2(message: Message, state: FSMContext):
     await state.clear()
-    top = await rq.get_leaderboard(message.text)
-
     if message.text == "Мощнейший всеобщий топ":
-        top_text = "Мощнейший всеобщий топ\n"
+        with open('tops/main_top.txt', 'r+') as f:
+            text = f.read()
+            await message.answer(text = text, reply_markup = ReplyKeyboardRemove())
     else:
-        top_text = f"Мощнейший топ {message.text}\n"
-
-    place = 0
-    coun = 0
-    prev_num = 0
-    prev_corr = 0
-    flag = False
-    for user_top in top:
-        wr = user_top.correct_predictions / user_top.number_of_predictions * 100
-        user = await rq.get_user_by_id(user_top.user_id)
-        if not flag:
-            prev_num = user_top.number_of_predictions
-            prev_corr = user_top.correct_predictions
-            flag = True
-            place += 1
-        place += 1
-        coun += 1
-        if prev_num == user_top.number_of_predictions and prev_corr == user_top.correct_predictions:
-            place -= 1
-        elif place != coun:
-            place = coun
-        top_str = f'{place}. @{user.username} {user_top.correct_predictions}/{user_top.number_of_predictions} {wr:.2f}%\n'
-        top_text += top_str
-        prev_num = user_top.number_of_predictions
-        prev_corr = user_top.correct_predictions
-
+        name = message.text.replace(' ', '_')
+        with open(f'tops/{name}_top.txt', 'r+') as f:
+            text = f.read()
+            await message.answer(text = text, reply_markup = ReplyKeyboardRemove())
     
-    await message.answer(text = top_text, reply_markup = kb.main)
 
 
 @router_user.message(F.text == 'О нас')

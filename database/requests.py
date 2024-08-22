@@ -154,3 +154,28 @@ async def open_check(tournament_id):
         if not tournament:
             return False
         return True
+    
+
+async def find_tournamentid_by_matchid(match_id):
+    async with async_session() as session:
+        return await session.scalar(select(Match.tournament_id).where(Match.id == match_id))
+
+
+async def  get_mainleaderboard():
+    async with async_session() as session:
+        return await session.scalars(select(LeaderboardMain.correct_predictions, LeaderboardMain.number_of_predictions).join(User.username, User.id == LeaderboardMain.user_id).order_by(LeaderboardMain.correct_predictions.desc(), LeaderboardMain.number_of_predictions, User.username))
+    
+
+async def  get_tournamentleaderboard(tournament_id):
+    async with async_session() as session:
+        return await session.scalars(select(LeaderboardTournament.correct_predictions, LeaderboardTournament.number_of_predictions).join(User.username, User.id == LeaderboardTournament.user_id).where(LeaderboardTournament.tournament_id == tournament_id).order_by(LeaderboardTournament.correct_predictions.desc(), LeaderboardMain.number_of_predictions, User.username))
+
+
+async def get_tournament_name_by_id(id):
+    async with async_session() as session:
+        return await session.scalar(select(Tournament).where(Tournament.id == id))
+
+
+async def get_users_id():
+    async with async_session() as session:
+        return await session.scalars(select(User.tg_id))

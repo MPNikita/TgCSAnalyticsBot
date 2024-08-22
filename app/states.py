@@ -35,3 +35,8 @@ class MatchUpdate(StatesGroup):
 
 class ShowLeaders(StatesGroup):
     show_lead = State()
+
+
+class Broadcast(StatesGroup):
+    got_msg = State()
+    confirm = State()

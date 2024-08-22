@@ -10,6 +10,12 @@ main = ReplyKeyboardMarkup(keyboard = [
                                 resize_keyboard=True,
                                 input_field_placeholder='Выберите один из пунктов')
 
+confirmation = ReplyKeyboardMarkup(keyboard = [
+    [KeyboardButton(text='Подтверждаю')],
+    [KeyboardButton(text='Отмена')]
+],
+                                resize_keyboard=True,)
+
 
 async def choose_tournament():
     keyboard = ReplyKeyboardBuilder()
