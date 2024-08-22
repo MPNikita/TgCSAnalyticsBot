@@ -79,12 +79,12 @@ async def show_leaderboard_2(message: Message, state: FSMContext):
     if message.text == "Мощнейший всеобщий топ":
         with open('tops/main_top.txt', 'r+') as f:
             text = f.read()
-            await message.answer(text = text, reply_markup = ReplyKeyboardRemove())
+            await message.answer(text = text, reply_markup = kb.main)
     else:
         name = message.text.replace(' ', '_')
         with open(f'tops/{name}_top.txt', 'r+') as f:
             text = f.read()
-            await message.answer(text = text, reply_markup = ReplyKeyboardRemove())
+            await message.answer(text = text, reply_markup = kb.main)
     
 
 
