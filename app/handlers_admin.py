@@ -193,7 +193,7 @@ async def broadcast_message_3(message: Message, state: FSMContext):
     data = await state.get_data()
     users = await rq.get_users_id()
     for user in users:
-        await message.bot.send_message(user.tg_id, text = data['got_msg'])
+        await message.bot.send_message(user, text = data['got_msg'])
     await state.clear()
     await message.answer(text = "Текст отправлен!", 
                          reply_markup = ReplyKeyboardRemove())
