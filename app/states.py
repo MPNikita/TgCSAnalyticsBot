@@ -1,7 +1,9 @@
 from aiogram.fsm.state import State, StatesGroup
 
-class InitPred(StatesGroup):
-    init = State()
+
+class Predict(StatesGroup):
+    show_tornament = State()
+    make_predict = State()
 
 
 class TournamentCreation(StatesGroup):

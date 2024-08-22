@@ -30,27 +30,36 @@ async def show_tournaments(message: Message, state: FSMContext):
     if not tornaments:
         await message.answer('Нет турниров для проведения мощнейшей аналитики', reply_markup = kb.main)
     else:
-        await state.set_state(st.InitPred.init)
+        await state.set_state(st.Predict.show_tornament)
         await message.answer('Выберите турнир', reply_markup =await kb.choose_tournament())
 
 
-@router_user.message(st.InitPred.init) 
+@router_user.message(st.Predict.show_tornament) 
 async def choose_tournament(message: Message, state: FSMContext):
     tournament = await rq.find_tournament_by_name(message.text)
-    await state.clear()
+    
     if message.text != "Вернуться в меню":
+        await state.set_state(st.Predict.make_predict)
         await message.answer('Кто победит в этом матче?', reply_markup =await kb.predict_match(tournament.id, 0))
     else:
+        await state.clear()
         await message.answer(text = 'Меню', reply_markup = kb.main)
 
 
-@router_user.callback_query(F.data.contains('predict'))
-async def predict_macth(callbackquery: CallbackQuery):
+@router_user.callback_query(st.Predict.make_predict)
+async def predict_macth(callbackquery: CallbackQuery, state: FSMContext):
     _, match_id, tournament_id, match_local_id, result, exists_next = callbackquery.data.split('_')
+    if not await rq.open_check(int(tournament_id)):
+        await state.clear()
+        await callbackquery.answer('Что-то пошло не так')
+        await callbackquery.message.answer('Прогнозы на матчи этого турнира закрыты')
+        return
+
     await rq.new_predict(callbackquery.from_user.id, int(match_id), int(result))
     await callbackquery.answer('Прогноз сохранен')
 
     if exists_next == 'no':
+        await state.clear()
         await callbackquery.message.answer('Все прогнозы на этот турнир сделаны', reply_markup = kb.main)
         return
     
@@ -74,13 +83,30 @@ async def show_leaderboard_2(message: Message, state: FSMContext):
     else:
         top_text = f"Мощнейший топ {message.text}\n"
 
-    place = 1
+    place = 0
+    coun = 0
+    prev_num = 0
+    prev_corr = 0
+    flag = False
     for user_top in top:
         wr = user_top.correct_predictions / user_top.number_of_predictions * 100
         user = await rq.get_user_by_id(user_top.user_id)
+        if not flag:
+            prev_num = user_top.number_of_predictions
+            prev_corr = user_top.correct_predictions
+            flag = True
+            place += 1
+        place += 1
+        coun += 1
+        if prev_num == user_top.number_of_predictions and prev_corr == user_top.correct_predictions:
+            place -= 1
+        elif place != coun:
+            place = coun
         top_str = f'{place}. @{user.username} {user_top.correct_predictions}/{user_top.number_of_predictions} {wr:.2f}%\n'
         top_text += top_str
-        place += 1
+        prev_num = user_top.number_of_predictions
+        prev_corr = user_top.correct_predictions
+
     
     await message.answer(text = top_text, reply_markup = kb.main)
 

@@ -51,14 +51,14 @@ async def create_match_2(message: Message, state: FSMContext):
 
 
 @router_admin.message(st.MatchCreation.team2)
-async def create_match_2(message: Message, state: FSMContext):
+async def create_match_3(message: Message, state: FSMContext):
     await state.update_data(team1 = message.text)
     await state.set_state(st.MatchCreation.creation)
     await message.answer(text = "Введите название второй команды, строго как на hltv.org !")
 
 
 @router_admin.message(st.MatchCreation.creation)
-async def create_match_2(message: Message, state: FSMContext):
+async def create_match_4(message: Message, state: FSMContext):
     await state.update_data(team2 = message.text)
     data = await state.get_data()
     await state.clear()
@@ -99,6 +99,10 @@ async def close_2(message: Message, state: FSMContext):
 
 @router_admin.message(Command('match_stats'))
 async def match_stats_1(message: Message, state: FSMContext):
+    if not await admin_checker(message.from_user.id):
+        await message.answer('No permission')
+        return
+
     await state.set_state(st.MatchStats.stats)
     await message.answer(text = "Выберите матч для предоставления статистики!", 
                          reply_markup = await kb.open_matches())
@@ -122,6 +126,10 @@ async def match_stats_2(message: Message, state: FSMContext):
 
 @router_admin.message(Command('update_match'))
 async def update_match_1(message: Message, state: FSMContext):
+    if not await admin_checker(message.from_user.id):
+        await message.answer('No permission')
+        return
+
     await state.set_state(st.MatchUpdate.show_stats)
     await message.answer(text = "Выберите матч для внесение результатов ", 
                          reply_markup = await kb.open_matches())
@@ -144,7 +152,7 @@ async def update_match_2(message: Message, state: FSMContext):
 
 
 @router_admin.message(st.MatchUpdate.match_upd)
-async def update_match_2(message: Message, state: FSMContext):
+async def update_match_3(message: Message, state: FSMContext):
     await state.clear()
     _, id_str, result = message.text.split('; ')
     _, match_id = id_str.split(':')

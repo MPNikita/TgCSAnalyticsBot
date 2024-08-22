@@ -137,11 +137,20 @@ async def get_leaderboard(name):
         tournament = await session.scalar(select(Tournament).where(Tournament.name == name))
         
         if not tournament:
-            return await session.scalars(select(LeaderboardMain).order_by(LeaderboardMain.correct_predictions.desc(), LeaderboardMain.number_of_predictions))
+            return await session.scalars(select(LeaderboardMain).join(User, User.id == LeaderboardMain.user_id).order_by(LeaderboardMain.correct_predictions.desc(), LeaderboardMain.number_of_predictions, User.username))
         
-        return await session.scalars(select(LeaderboardTournament).where(LeaderboardTournament.tournament_id == tournament.id).order_by(LeaderboardTournament.correct_predictions.desc(), LeaderboardTournament.number_of_predictions))
+        return await session.scalars(select(LeaderboardTournament).join(User, User.id == LeaderboardTournament.user_id).where(LeaderboardTournament.tournament_id == tournament.id).order_by(LeaderboardTournament.correct_predictions.desc(), LeaderboardTournament.number_of_predictions, User.username))
 
 
 async def get_user_by_id(id):
     async with async_session() as session:
         return await session.scalar(select(User).where(User.id == id))
+    
+
+async def open_check(tournament_id):
+    async with async_session() as session:
+        tournament = await session.scalar(select(Tournament).where(Tournament.id == tournament_id).where(Tournament.state == 'Open'))
+
+        if not tournament:
+            return False
+        return True
