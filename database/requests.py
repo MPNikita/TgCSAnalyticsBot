@@ -43,7 +43,21 @@ async def new_match(name, team1, team2):
             await session.commit()
             return "Матч добавлен!"
         except:
-            return "Турнир не найден, попробуйте снова!"
+            return "Что то пошло не так, попробуйте снова!"
+        
+
+async def new_predict_admin(tournament_name, username, predict, team1, team2):
+    async with async_session() as session:
+        try:
+            user_id = await session.scalar(select(User.id).where(User.username == username))
+            tournament_id = await session.scalar(select(Tournament.id).where(Tournament.name == tournament_name))
+            match_id = await session.scalar(select(Match.id).where(Match.tournament_id == tournament_id).where(Match.team_1 == team1).where(Match.team_2 == team2))
+            session.add(Predict(user_id = user_id, match_id = match_id, result = predict))
+            await session.commit()
+            return "Предикт добавлен!"
+        except:
+            return "Что то пошло не так, попробуйте снова!"
+
 
 
 async def opened_tournaments():
@@ -87,6 +101,11 @@ async def find_user_by_id(tg_id):
     async with async_session() as session:
         return await session.scalar(select(User).where(User.tg_id == tg_id))  
 
+
+async def find_username_by_id(id):
+    async with async_session() as session:
+        return await session.scalar(select(User.username).where(User.id == id)) 
+    
 
 async def opened_matches():
     async with async_session() as session:
@@ -163,17 +182,17 @@ async def find_tournamentid_by_matchid(match_id):
 
 async def  get_mainleaderboard():
     async with async_session() as session:
-        return await session.scalars(select(LeaderboardMain.correct_predictions, LeaderboardMain.number_of_predictions).join(User.username, User.id == LeaderboardMain.user_id).order_by(LeaderboardMain.correct_predictions.desc(), LeaderboardMain.number_of_predictions, User.username))
+        return await session.scalars(select(LeaderboardMain).join(User, User.id == LeaderboardMain.user_id).order_by(LeaderboardMain.correct_predictions.desc(), LeaderboardMain.number_of_predictions, User.username))
     
 
 async def  get_tournamentleaderboard(tournament_id):
     async with async_session() as session:
-        return await session.scalars(select(LeaderboardTournament.correct_predictions, LeaderboardTournament.number_of_predictions).join(User.username, User.id == LeaderboardTournament.user_id).where(LeaderboardTournament.tournament_id == tournament_id).order_by(LeaderboardTournament.correct_predictions.desc(), LeaderboardMain.number_of_predictions, User.username))
+        return await session.scalars(select(LeaderboardTournament).join(User, User.id == LeaderboardTournament.user_id).where(LeaderboardTournament.tournament_id == tournament_id).order_by(LeaderboardTournament.correct_predictions.desc(), LeaderboardTournament.number_of_predictions, User.username))
 
 
 async def get_tournament_name_by_id(id):
     async with async_session() as session:
-        return await session.scalar(select(Tournament).where(Tournament.id == id))
+        return await session.scalar(select(Tournament.name).where(Tournament.id == id))
 
 
 async def get_users_id():

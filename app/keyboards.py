@@ -16,6 +16,23 @@ confirmation = ReplyKeyboardMarkup(keyboard = [
 ],
                                 resize_keyboard=True,)
 
+admin_panel = ReplyKeyboardMarkup(keyboard = [
+    [KeyboardButton(text='/create_tournament')],
+    [KeyboardButton(text='/create_match')],
+    [KeyboardButton(text='/open_predicts')],
+    [KeyboardButton(text='/close_predicts')],
+    [KeyboardButton(text='/match_stats')],
+    [KeyboardButton(text='/update_match')],
+    [KeyboardButton(text='/broadcast_message')],
+    [KeyboardButton(text='/new_predict')],
+],
+                                resize_keyboard=True,)
+
+cancel = ReplyKeyboardMarkup(keyboard = [
+    [KeyboardButton(text='Отмена')],
+],
+                                resize_keyboard=True,)
+
 
 async def choose_tournament():
     keyboard = ReplyKeyboardBuilder()
@@ -24,6 +41,16 @@ async def choose_tournament():
         keyboard.add(KeyboardButton(text = tournament.name))
     keyboard.adjust(2)
     keyboard.row(KeyboardButton(text = "Вернуться в меню"))
+    return keyboard.as_markup(resize_keyboard = True)
+
+
+async def all_touranments_admin():
+    keyboard = ReplyKeyboardBuilder()
+    tournaments = await rq.get_tournaments()
+    keyboard.add(KeyboardButton(text = "Отмена"))
+    for tournament in tournaments:
+        keyboard.add(KeyboardButton(text = tournament.name))
+    keyboard.adjust(1)
     return keyboard.as_markup(resize_keyboard = True)
 
 

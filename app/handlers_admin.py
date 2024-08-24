@@ -32,6 +32,10 @@ async def create_tournament_1(message: Message, state: FSMContext):
 @router_admin.message(st.TournamentCreation.name)
 async def create_tournament_2(message: Message, state: FSMContext):
     await state.clear()
+    name = message.text
+    name = name.replace(' ', '_')
+    with open(f'tops/{name}_top.txt', 'w+') as f:
+        f.write('Данный турнир ещё не начался.')
     await message.answer(text = await rq.new_tournament(message.text))
 
 
@@ -192,8 +196,59 @@ async def broadcast_message_3(message: Message, state: FSMContext):
 
     data = await state.get_data()
     users = await rq.get_users_id()
-    for user in users:
-        await message.bot.send_message(user, text = data['got_msg'])
+    await message.answer(text = "Начинается рассылка!")
     await state.clear()
+    for user in users:
+        try:
+            await message.bot.send_message(user, text = data['got_msg'])
+        except:
+            pass
     await message.answer(text = "Текст отправлен!", 
                          reply_markup = ReplyKeyboardRemove())
+
+
+@router_admin.message(Command('admin'))
+async def admin_commands(message: Message):
+    if not await admin_checker(message.from_user.id):
+        await message.answer('No permission')
+        return
+    
+    await message.answer(text = "Привет Админ!", 
+                         reply_markup = kb.admin_panel)
+    
+
+@router_admin.message(Command('new_predict'))
+async def make_predict_1(message: Message, state: FSMContext):
+    if not await admin_checker(message.from_user.id):
+        await message.answer('No permission')
+        return
+    
+    await state.set_state(st.AdminMakePredict.tournament_name)
+    await message.answer(text = 'Выберите турнир, на который вы хотите ввести предикты',
+                         reply_markup = await kb.all_touranments_admin())
+    
+
+@router_admin.message(st.AdminMakePredict.tournament_name)
+async def make_predict_2(message: Message, state: FSMContext):
+    if message.text == 'Отмена':
+        await state.clear()
+        await message.answer(text = 'Действие отменено', reply_markup = ReplyKeyboardRemove())
+        return
+    
+    await state.update_data(tournament_name = message.text)
+    await state.set_state(st.AdminMakePredict.making)
+    await message.answer(text = 'Введите предикт игрока формата:\nusername,predict,team1,team2,result\nВСЕ БЕЗ ПРОБЕЛОВ\nПока вы не нажмете кнопку отмена продолжайте присылать предикты, после подтверждения получения!\nЛишний раз не используйте эту команду!', 
+                         reply_markup = kb.cancel)
+    
+
+@router_admin.message(st.AdminMakePredict.making)
+async def make_predict_3(message: Message, state: FSMContext):
+    if message.text == 'Отмена':
+        await state.clear()
+        await message.answer(text = 'Прием предиктов остановлен! Команда завершена!', 
+                             reply_markup = ReplyKeyboardRemove())
+        return
+    
+    data_from_state = await state.get_data()
+    username, predict, team1, team2, result = message.text.split(',')
+    await message.answer(text = await rq.new_predict_admin(data_from_state['tournament_name'], username, predict, team1, team2, result))

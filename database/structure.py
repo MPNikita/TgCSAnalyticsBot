@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Mapped, DeclarativeBase, mapped_column
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncAttrs, async_sessionmaker
-from sqlalchemy import BigInteger, String, ForeignKey
+from sqlalchemy import BigInteger, String, ForeignKey, SmallInteger
 
 import os
 from dotenv import load_dotenv
@@ -39,6 +39,7 @@ class Match(Base):
     team_1: Mapped[str] = mapped_column(String(64))
     team_2: Mapped[str] = mapped_column(String(64))
     result: Mapped[int] = mapped_column()
+    #is_open = mapped_column(SmallInteger)
 
 
 class Predict(Base):

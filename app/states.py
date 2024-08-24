@@ -40,3 +40,8 @@ class ShowLeaders(StatesGroup):
 class Broadcast(StatesGroup):
     got_msg = State()
     confirm = State()
+
+
+class AdminMakePredict(StatesGroup):
+    tournament_name = State()
+    making = State()
