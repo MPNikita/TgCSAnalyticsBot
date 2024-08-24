@@ -133,8 +133,8 @@ async def update_match(match_id, result):
                 await session.execute(update(LeaderboardMain).values(correct_predictions = main_lead.correct_predictions + result_of_predict, number_of_predictions = main_lead.number_of_predictions + 1).where(LeaderboardMain.user_id == pred.user_id))
             
             #update tournament leaderboard
-            tour_lead = await session.scalar(select(LeaderboardTournament).where(LeaderboardTournament.user_id == pred.user_id))
             match_ = await session.scalar(select(Match).where(Match.id == pred.match_id))
+            tour_lead = await session.scalar(select(LeaderboardTournament).where(LeaderboardTournament.user_id == pred.user_id).where(LeaderboardTournament.tournament_id == match_.tournament_id))
             if not tour_lead:
                 session.add(LeaderboardTournament(user_id = pred.user_id,
                                                   tournament_id = match_.tournament_id,
