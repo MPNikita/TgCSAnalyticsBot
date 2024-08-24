@@ -61,7 +61,7 @@ async def update_text_tops(match_id):
             place -= 1
         elif place != coun:
             place = coun
-        top_str = f'{place}. @{username} {user_top.correct_predictions}/{user_top.number_of_predictions} ({wr:.2f})%\n'
+        top_str = f'{place}. @{username} {user_top.correct_predictions}/{user_top.number_of_predictions} ({wr:.2f}%)\n'
         top_text += top_str
         prev_num = user_top.number_of_predictions
         prev_corr = user_top.correct_predictions

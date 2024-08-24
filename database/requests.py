@@ -50,6 +50,9 @@ async def new_predict_admin(tournament_name, username, predict, team1, team2):
     async with async_session() as session:
         try:
             user_id = await session.scalar(select(User.id).where(User.username == username))
+            if not user_id:
+                return "Пользователь не найден!"
+            
             tournament_id = await session.scalar(select(Tournament.id).where(Tournament.name == tournament_name))
             match_id = await session.scalar(select(Match.id).where(Match.tournament_id == tournament_id).where(Match.team_1 == team1).where(Match.team_2 == team2))
             session.add(Predict(user_id = user_id, match_id = match_id, result = predict))
