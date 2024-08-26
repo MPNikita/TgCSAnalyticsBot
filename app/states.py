@@ -2,7 +2,7 @@ from aiogram.fsm.state import State, StatesGroup
 
 
 class Predict(StatesGroup):
-    show_tornament = State()
+    show_tournament = State()
     make_predict = State()
 
 
@@ -35,6 +35,7 @@ class MatchUpdate(StatesGroup):
 
 class ShowLeaders(StatesGroup):
     show_lead = State()
+    show_tournaments = State()
 
 
 class Broadcast(StatesGroup):
@@ -45,3 +46,6 @@ class Broadcast(StatesGroup):
 class AdminMakePredict(StatesGroup):
     tournament_name = State()
     making = State()
+
+class ShowPredicts(StatesGroup):
+    got_tournament = State()

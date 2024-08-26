@@ -65,12 +65,12 @@ async def new_predict_admin(tournament_name, username, predict, team1, team2):
 
 async def opened_tournaments():
     async with async_session() as session:
-        return await session.scalars(select(Tournament).where(Tournament.state == 'Open'))
+        return await session.scalars(select(Tournament).where(Tournament.state == 'Open').order_by(Tournament.id.desc()))
     
 
 async def closed_tournaments():
     async with async_session() as session:
-        return await session.scalars(select(Tournament).where(Tournament.state == 'Close'))
+        return await session.scalars(select(Tournament).where(Tournament.state == 'Close').order_by(Tournament.id.desc()))
 
 
 async def open_tournament(name):
@@ -103,6 +103,11 @@ async def find_tournament_by_name(name):
 async def find_user_by_id(tg_id):
     async with async_session() as session:
         return await session.scalar(select(User).where(User.tg_id == tg_id))  
+    
+
+async def find_userid_by_tgid(tg_id):
+    async with async_session() as session:
+        return await session.scalar(select(User.id).where(User.tg_id == tg_id))  
 
 
 async def find_username_by_id(id):
@@ -151,7 +156,13 @@ async def update_match(match_id, result):
 
 async def get_tournaments():
     async with async_session() as session:
-        return await session.scalars(select(Tournament))
+        return await session.scalars(select(Tournament).order_by(Tournament.id.desc()))
+    
+
+async def get_ongiong_tournaments(): #CHNGE WHEN UPDATE DB
+    async with async_session() as session:
+        return await session.scalars(select(Tournament.name).order_by(Tournament.id.desc()))
+"""         return await session.scalars(select(Tournament.name).where(Tournament.time_state == 'Ongoing')) """
     
 
 async def get_leaderboard(name):
@@ -196,8 +207,24 @@ async def  get_tournamentleaderboard(tournament_id):
 async def get_tournament_name_by_id(id):
     async with async_session() as session:
         return await session.scalar(select(Tournament.name).where(Tournament.id == id))
+    
+
+async def get_tournament_id_by_name(name):
+    async with async_session() as session:
+        return await session.scalar(select(Tournament.id).where(Tournament.name == name))
 
 
 async def get_users_id():
     async with async_session() as session:
         return await session.scalars(select(User.tg_id))
+    
+
+async def get_predict_by_ids(user_id, match_id):
+    async with async_session() as session:
+        return await session.scalar(select(Predict.result).where(Predict.user_id == user_id).where(Predict.match_id == match_id))
+
+
+async def get_open_matches_by_tournament_name(tournament_name):
+    async with async_session() as session:
+        tournament_id = await get_tournament_id_by_name(tournament_name)
+        return await session.execute(select(Match.id, Match.team_1, Match.team_2).where(Match.tournament_id == tournament_id).where(Match.result == 0))

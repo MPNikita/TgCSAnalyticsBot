@@ -5,6 +5,7 @@ import database.requests as rq
 
 main = ReplyKeyboardMarkup(keyboard = [
     [KeyboardButton(text='Провести мощнейшую аналитику')],
+    [KeyboardButton(text='Мои предикты')],
     [KeyboardButton(text='Рейтинг аналитиков'), KeyboardButton(text='О нас')]
 ],
                                 resize_keyboard=True,
@@ -13,6 +14,13 @@ main = ReplyKeyboardMarkup(keyboard = [
 confirmation = ReplyKeyboardMarkup(keyboard = [
     [KeyboardButton(text='Подтверждаю')],
     [KeyboardButton(text='Отмена')]
+],
+                                resize_keyboard=True,)
+
+rating_menu = ReplyKeyboardMarkup(keyboard = [
+    [KeyboardButton(text="Мощнейший всеобщий топ")],
+    [KeyboardButton(text='Рейтинги по турнирам')],
+    [KeyboardButton(text='Вернуться в меню')]
 ],
                                 resize_keyboard=True,)
 
@@ -88,6 +96,16 @@ async def close_tournament():
     return keyboard.as_markup(resize_keyboard = True)
 
 
+async def ongoing_tournaments():
+    keyboard = ReplyKeyboardBuilder()
+    name_tournaments = await rq.get_ongiong_tournaments()
+    for name_tournament in name_tournaments:
+        keyboard.add(KeyboardButton(text = name_tournament))
+    keyboard.add(KeyboardButton(text = "Вернуться в меню"))
+    keyboard.adjust(1)
+    return keyboard.as_markup(resize_keyboard = True)
+
+
 async def open_matches():
     keyboard = ReplyKeyboardBuilder()
     opened_matches = await rq.opened_matches()
@@ -108,8 +126,8 @@ async def choose_result(id, team1, team2):
 async def show_leaderboards():
     keyboard = ReplyKeyboardBuilder()
     tournaments = await rq.get_tournaments()
-    keyboard.add(KeyboardButton(text = "Мощнейший всеобщий топ"))
     for tournament in tournaments:
         keyboard.add(KeyboardButton(text = tournament.name))
+    keyboard.add(KeyboardButton(text = "Вернуться в меню"))
     keyboard.adjust(1)
     return keyboard.as_markup(resize_keyboard = True)

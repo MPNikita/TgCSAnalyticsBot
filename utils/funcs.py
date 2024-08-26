@@ -34,7 +34,7 @@ async def update_text_tops(match_id):
     
     with open('tops/main_top.txt', 'w+') as f:
         f.write(top_text)
-    
+    """ await rq.update_main_top(top_text) """
     #update tournament_top
     tournament_name = str(await rq.get_tournament_name_by_id(tournament_id))
 
@@ -69,3 +69,4 @@ async def update_text_tops(match_id):
     tournament_name = tournament_name.replace(' ', '_')
     with open(f'tops/{tournament_name}_top.txt', 'w+') as f:
         f.write(top_text)
+    """ await rq.update_tops(tournament_id, top_text) """
