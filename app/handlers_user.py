@@ -1,6 +1,6 @@
 from aiogram import Router, F
 from aiogram.filters import Command, CommandStart
-from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
+from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext 
 
 from app.texts import START, HELP, ABOUT_US
@@ -38,12 +38,17 @@ async def show_tournaments(message: Message, state: FSMContext):
 
 @router_user.message(st.Predict.show_tournament) 
 async def choose_tournament(message: Message, state: FSMContext):
-    tournament = await rq.find_tournament_by_name(message.text)
-    
+    tournament_id = await rq.get_tournament_id_by_name(message.text)
+    if not await rq.predict_matches_check(tournament_id):
+        await message.answer('Открытых предиктов на этот турнир нет.')
+        await message.answer(text = 'Меню', reply_markup = kb.main)
+        await state.clear()
+        return
+
     if message.text != "Вернуться в меню":
         try:
             await state.set_state(st.Predict.make_predict)
-            await message.answer('Кто победит в этом матче?', reply_markup =await kb.predict_match(tournament.id, 0))
+            await message.answer('Кто победит в этом матче?', reply_markup =await kb.predict_match(tournament_id, 0))
         except:
             await state.clear()
             await message.answer(text = 'Турнир не найден!', reply_markup = kb.main)

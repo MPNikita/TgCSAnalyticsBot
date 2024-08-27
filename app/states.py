@@ -47,5 +47,16 @@ class AdminMakePredict(StatesGroup):
     tournament_name = State()
     making = State()
 
+
 class ShowPredicts(StatesGroup):
     got_tournament = State()
+
+
+class OpenMatch(StatesGroup):
+    got_tournament = State()
+    got_match = State()
+
+
+class CloseMatch(StatesGroup):
+    got_tournament = State()
+    got_match = State()

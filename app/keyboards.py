@@ -33,6 +33,8 @@ admin_panel = ReplyKeyboardMarkup(keyboard = [
     [KeyboardButton(text='/update_match')],
     [KeyboardButton(text='/broadcast_message')],
     [KeyboardButton(text='/new_predict')],
+    [KeyboardButton(text='/open_match')],
+    [KeyboardButton(text='/close_match')],
 ],
                                 resize_keyboard=True,)
 
@@ -83,6 +85,7 @@ async def open_tournament():
     data_tournament = await rq.closed_tournaments()
     for tournament in data_tournament:
         keyboard.add(KeyboardButton(text = tournament.name))
+    keyboard.add(KeyboardButton(text = "Отмена"))
     keyboard.adjust(1)
     return keyboard.as_markup(resize_keyboard = True)
 
@@ -92,6 +95,7 @@ async def close_tournament():
     data_tournament = await rq.opened_tournaments()
     for tournament in data_tournament:
         keyboard.add(KeyboardButton(text = tournament.name))
+    keyboard.add(KeyboardButton(text = "Отмена"))
     keyboard.adjust(1)
     return keyboard.as_markup(resize_keyboard = True)
 
@@ -129,5 +133,27 @@ async def show_leaderboards():
     for tournament in tournaments:
         keyboard.add(KeyboardButton(text = tournament.name))
     keyboard.add(KeyboardButton(text = "Вернуться в меню"))
+    keyboard.adjust(1)
+    return keyboard.as_markup(resize_keyboard = True)
+
+
+async def closed_matches(tournament_id):
+    keyboard = ReplyKeyboardBuilder()
+    matches = await rq.get_closed_matches(tournament_id)
+    for match_ in matches:
+        text = "id:" + str(match_.id) + ";" + match_.team_1 + " vs " + match_.team_2
+        keyboard.add(KeyboardButton(text = text))
+    keyboard.add(KeyboardButton(text = "Отмена"))
+    keyboard.adjust(1)
+    return keyboard.as_markup(resize_keyboard = True)
+
+
+async def opened_matches(tournament_id):
+    keyboard = ReplyKeyboardBuilder()
+    matches = await rq.get_opened_matches(tournament_id)
+    for match_ in matches:
+        text = "id:" + str(match_.id) + ";" + match_.team_1 + " vs " + match_.team_2
+        keyboard.add(KeyboardButton(text = text))
+    keyboard.add(KeyboardButton(text = "Отмена"))
     keyboard.adjust(1)
     return keyboard.as_markup(resize_keyboard = True)

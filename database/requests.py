@@ -1,6 +1,7 @@
 from database.structure import async_session
-from database.structure import User, Match, Predict, Tournament, LeaderboardMain, LeaderboardTournament
+from database.structure import User, Match, MatchOld, Predict, PredictOld, Tournament, TournamentOld, LeaderboardMain, LeaderboardTournament
 from sqlalchemy import select, update, delete
+import traceback
 
 
 async def new_user(tg_id, username):
@@ -29,7 +30,7 @@ async def new_tournament(name):
         tournament = await session.scalar(select(Tournament).where(Tournament.name == name))
 
         if not tournament:
-            session.add(Tournament(name = name, state = 'Close'))
+            session.add(Tournament(name = name, is_open = False))
             await session.commit()
             return "Турнир добавлен!"
         return "Турнир уже существует!"
@@ -42,7 +43,8 @@ async def new_match(name, team1, team2):
             session.add(Match(tournament_id = tournament.id, team_1 = team1, team_2 = team2, result = 0))
             await session.commit()
             return "Матч добавлен!"
-        except:
+        except Exception as e:
+            print('Ошибка:\n', traceback.format_exc())
             return "Что то пошло не так, попробуйте снова!"
         
 
@@ -65,34 +67,41 @@ async def new_predict_admin(tournament_name, username, predict, team1, team2):
 
 async def opened_tournaments():
     async with async_session() as session:
-        return await session.scalars(select(Tournament).where(Tournament.state == 'Open').order_by(Tournament.id.desc()))
+        return await session.scalars(select(Tournament).where(Tournament.is_open == True).order_by(Tournament.id.desc()))
     
 
 async def closed_tournaments():
     async with async_session() as session:
-        return await session.scalars(select(Tournament).where(Tournament.state == 'Close').order_by(Tournament.id.desc()))
+        return await session.scalars(select(Tournament).where(Tournament.is_open == False).order_by(Tournament.id.desc()))
 
 
 async def open_tournament(name):
     async with async_session() as session:
-        await session.execute(update(Tournament).values(state = "Open").where(Tournament.name == name))
+        await session.execute(update(Tournament).values(is_open = True).where(Tournament.name == name))
         await session.commit()
     
 
 async def close_tournament(name):
     async with async_session() as session:
-        await session.execute(update(Tournament).values(state = "Close").where(Tournament.name == name))
+        await session.execute(update(Tournament).values(is_open = False).where(Tournament.name == name))
+        await session.commit()
+
+
+async def open_match(match_id):
+    async with async_session() as session:
+        await session.execute(update(Match).values(is_open = True).where(Match.id == match_id))
+        await session.commit()
+
+
+async def close_match(match_id):
+    async with async_session() as session:
+        await session.execute(update(Match).values(is_open = False).where(Match.id == match_id))
         await session.commit()
 
 
 async def matches_to_predict(tournament_id):
     async with async_session() as session:
-        return await session.scalars(select(Match).where((Match.result == 0) & (Match.tournament_id == tournament_id)).order_by(Match.id))
-    
-
-async def check_predict(tournament_id):
-    async with async_session() as session:
-        return await session.scalars(select(Match).where((Match.result == 0) & (Match.tournament_id == tournament_id)).order_by(Match.id))
+        return await session.scalars(select(Match).where(Match.result == 0).where(Match.tournament_id == tournament_id).where(Match.is_open == True).order_by(Match.id))
 
 
 async def find_tournament_by_name(name):
@@ -159,11 +168,10 @@ async def get_tournaments():
         return await session.scalars(select(Tournament).order_by(Tournament.id.desc()))
     
 
-async def get_ongiong_tournaments(): #CHNGE WHEN UPDATE DB
+async def get_ongiong_tournaments():
     async with async_session() as session:
-        return await session.scalars(select(Tournament.name).order_by(Tournament.id.desc()))
-"""         return await session.scalars(select(Tournament.name).where(Tournament.time_state == 'Ongoing')) """
-    
+        return await session.scalars(select(Tournament.name).where(Tournament.time_state == 'Ongoing').order_by(Tournament.id.desc()))
+ 
 
 async def get_leaderboard(name):
     async with async_session() as session:
@@ -182,7 +190,7 @@ async def get_user_by_id(id):
 
 async def open_check(tournament_id):
     async with async_session() as session:
-        tournament = await session.scalar(select(Tournament).where(Tournament.id == tournament_id).where(Tournament.state == 'Open'))
+        tournament = await session.scalar(select(Tournament).where(Tournament.id == tournament_id).where(Tournament.is_open == True))
 
         if not tournament:
             return False
@@ -228,3 +236,70 @@ async def get_open_matches_by_tournament_name(tournament_name):
     async with async_session() as session:
         tournament_id = await get_tournament_id_by_name(tournament_name)
         return await session.execute(select(Match.id, Match.team_1, Match.team_2).where(Match.tournament_id == tournament_id).where(Match.result == 0))
+
+
+async def get_closed_matches(tournament_id):
+    async with async_session() as session:
+        return await session.execute(select(Match.id, Match.team_1, Match.team_2).where(Match.tournament_id == tournament_id).where(Match.is_open == False).order_by(Match.id.desc()))
+
+
+async def get_opened_matches(tournament_id):
+    async with async_session() as session:
+        return await session.execute(select(Match.id, Match.team_1, Match.team_2).where(Match.tournament_id == tournament_id).where(Match.is_open == True).order_by(Match.id.desc()))
+
+
+async def get_tournament_id_by_match(match_id):
+    async with async_session() as session:
+        return await session.scalar(select(Match.tournament_id).where(Match.id == match_id))
+
+
+async def migrate_data():
+    async with async_session() as session:
+        #migrate tournaments
+        pass
+        """ tournaments = await session.scalars(select(TournamentOld))
+
+        for tournament in tournaments:
+            is_open = True if tournament.state == 'Open' else False
+            session.add(Tournament(id = tournament.id, 
+                                         name = tournament.name, 
+                                         is_open = is_open, 
+                                         time_state = 'Past'))
+        await session.commit() """
+
+        #migrate matches
+
+        """ matches = await session.scalars(select(MatchOld))
+
+        for match_ in matches:
+            session.add(Match(id = match_.id,
+                                         tournament_id = match_.tournament_id,
+                                         team_1 = match_.team_1,
+                                         team_2 = match_.team_2,  
+                                         is_open = False, 
+                                         result = match_.result))
+        
+        await session.commit() """
+
+        #migrate predicts
+
+        """ predicts = await session.scalars(select(PredictOld))
+
+        for pred in predicts:
+            tournament_id = await get_tournament_id_by_match(pred.match_id)
+            session.add(Predict(id = pred.id,
+                                         user_id = pred.user_id,
+                                         match_id = pred.match_id,
+                                         tournament_id = tournament_id,
+                                         result = pred.result))
+        
+        await session.commit() """
+
+
+async def predict_matches_check(tournament_id):
+    async with async_session() as session:
+        count_matches = len(list(await session.scalars(select(Match.id).where(Match.result == 0).where(Match.tournament_id == tournament_id).where(Match.is_open == True).order_by(Match.id))))
+
+        if count_matches == 0:
+            return False
+        return True

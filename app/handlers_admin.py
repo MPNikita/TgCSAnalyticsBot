@@ -3,11 +3,13 @@ from aiogram.filters import Command
 from aiogram.types import Message, ReplyKeyboardRemove
 from app.config import ADMINS
 from aiogram.fsm.context import FSMContext 
+
 import database.requests as rq
 import app.keyboards as kb
 import app.states as st
 import utils.funcs as ufuncs
 
+import traceback
 
 
 router_admin = Router()
@@ -67,8 +69,8 @@ async def create_match_3(message: Message, state: FSMContext):
 async def create_match_4(message: Message, state: FSMContext):
     await state.update_data(team2 = message.text)
     data = await state.get_data()
-    await state.clear()
     await message.answer(text = await rq.new_match(data['name'], data['team1'],data['team2']))
+    await state.clear()
 
 
 @router_admin.message(Command('open_predicts'))
@@ -83,6 +85,10 @@ async def open_1(message: Message, state: FSMContext):
 
 @router_admin.message(st.OpenPredicts.open_)
 async def open_2(message: Message, state: FSMContext):
+    if message.text == "Отмена":
+        await message.answer("Действие отменено", reply_markup = ReplyKeyboardRemove())
+        return
+
     await rq.open_tournament(message.text)
     await message.answer(text = f"Прогнозы на {message.text} открыты!")
 
@@ -99,6 +105,10 @@ async def close_1(message: Message, state: FSMContext):
 
 @router_admin.message(st.ClosePredicts.close_)
 async def close_2(message: Message, state: FSMContext):
+    if message.text == "Отмена":
+        await message.answer("Действие отменено", reply_markup = ReplyKeyboardRemove())
+        return
+
     await rq.close_tournament(message.text)
     await message.answer(text = f"Прогнозы на {message.text} закрыты!")
 
@@ -252,3 +262,97 @@ async def make_predict_3(message: Message, state: FSMContext):
     data_from_state = await state.get_data()
     username, predict, team1, team2, result = message.text.split(',')
     await message.answer(text = await rq.new_predict_admin(data_from_state['tournament_name'], username, predict, team1, team2, result))
+
+
+@router_admin.message(Command('open_match'))
+async def open_match_1(message: Message, state: FSMContext):
+    if not await admin_checker(message.from_user.id):
+        await message.answer('No permission')
+        return
+    
+    await message.answer("Выберите нужный турнир", reply_markup = await kb.ongoing_tournaments())
+    await state.set_state(st.OpenMatch.got_tournament)
+
+
+@router_admin.message(st.OpenMatch.got_tournament)
+async def open_match_2(message: Message, state: FSMContext):
+    if message.text == "Отмена":
+        await message.answer("Действие отменено", reply_markup = ReplyKeyboardRemove())
+        await state.clear()
+        return
+    
+    try:
+        tournament_id = await rq.get_tournament_id_by_name(message.text)
+        await message.answer("Выберите нужный матч", reply_markup = await kb.closed_matches(tournament_id))
+        await state.set_state(st.OpenMatch.got_match)
+    except:
+        await message.answer("Что-то пошло не так (анлак)", reply_markup = ReplyKeyboardRemove())
+
+
+@router_admin.message(st.OpenMatch.got_match)
+async def open_match_3(message: Message, state: FSMContext):
+    await state.clear()
+    if message.text == "Отмена":
+        await message.answer("Действие отменено", reply_markup = ReplyKeyboardRemove())
+        return
+
+    try:
+        match_id, teams = message.text.split(';')
+        _, match_id = match_id.split(':')
+        await rq.open_match(int(match_id))
+        await message.answer(f"Матч открыт. id: {match_id}", reply_markup = ReplyKeyboardRemove())
+        
+    except:
+        await message.answer("Что-то пошло не так (анлак)", reply_markup = ReplyKeyboardRemove())
+
+
+@router_admin.message(Command('close_match'))
+async def close_match_1(message: Message, state: FSMContext):
+    if not await admin_checker(message.from_user.id):
+        await message.answer('No permission')
+        return
+    
+    await message.answer("Выберите нужный турнир", reply_markup = await kb.ongoing_tournaments())
+    await state.set_state(st.CloseMatch.got_tournament)
+
+
+@router_admin.message(st.CloseMatch.got_tournament)
+async def close_match_2(message: Message, state: FSMContext):
+    if message.text == "Отмена":
+        await message.answer("Действие отменено", reply_markup = ReplyKeyboardRemove())
+        await state.clear()
+        return
+    
+    try:
+        tournament_id = await rq.get_tournament_id_by_name(message.text)
+        await message.answer("Выберите нужный матч", reply_markup = await kb.opened_matches(tournament_id))
+        await state.set_state(st.CloseMatch.got_match)
+    except Exception as e:
+        print('Ошибка:\n', traceback.format_exc())
+        await message.answer("Что-то пошло не так (анлак)", reply_markup = ReplyKeyboardRemove())
+
+
+@router_admin.message(st.CloseMatch.got_match)
+async def close_match_3(message: Message, state: FSMContext):
+    await state.clear()
+    if message.text == "Отмена":
+        await message.answer("Действие отменено", reply_markup = ReplyKeyboardRemove())
+        return
+
+    try:
+        match_id, _ = message.text.split(';')
+        _, match_id = match_id.split(':')
+        await rq.close_match(int(match_id))
+        await message.answer(f"Матч закрыт. id: {match_id}", reply_markup = ReplyKeyboardRemove())
+    except Exception as e:
+        print('Ошибка:\n', traceback.format_exc())
+        await message.answer("Что-то пошло не так (анлак)", reply_markup = ReplyKeyboardRemove())
+
+
+@router_admin.message(Command('migrate_data'))
+async def migrate_data(message: Message, state: FSMContext):
+    if message.from_user.id != 416057157:
+        await message.answer("ТЫ КТО ТАКОЙ ЧТОБ ЭТО ДЕЛАТЬ?", reply_markup = ReplyKeyboardRemove())
+        return
+    
+    await rq.migrate_data()
