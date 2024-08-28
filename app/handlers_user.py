@@ -8,6 +8,8 @@ import app.keyboards as kb
 import database.requests as rq
 import app.states as st
 
+import traceback
+
 
 router_user = Router()
 
@@ -66,7 +68,7 @@ async def predict_macth(callbackquery: CallbackQuery, state: FSMContext):
         await callbackquery.message.answer('Прогнозы на матчи этого турнира закрыты')
         return
 
-    await rq.new_predict(callbackquery.from_user.id, int(match_id), int(result))
+    await rq.new_predict(callbackquery.from_user.id, int(match_id), int(tournament_id), int(result))
     await callbackquery.answer('Прогноз сохранен')
 
     if exists_next == 'no':
@@ -139,8 +141,25 @@ async def back_to_menu_3(message: Message):
 @router_user.message(F.text == 'Мои предикты')
 async def my_predicts(message: Message, state: FSMContext):
     await state.set_state(st.ShowPredicts.got_tournament)
-    await message.answer("Выберите турнир, для которого нужно показать ваши предикты", 
-                         reply_markup = await kb.ongoing_tournaments())
+    user_id = await rq.find_userid_by_tgid(message.from_user.id)
+    tournaments = await rq.get_ongiong_tournaments_nameid()
+    for tournament in tournaments:
+        counter = 0
+        matches = await rq.get_id_nc_matches_by_tid(tournament.id)
+        for match_id in matches:
+            pred = await rq.get_predict_by_ids(user_id, match_id)
+            if not pred:
+                continue
+            counter += 1
+
+    
+    if counter != 0:
+        await message.answer("Выберите турнир, для которого нужно показать ваши предикты", 
+                            reply_markup = await kb.my_predicts_tournament(user_id))
+    else:
+        await message.answer("Предиктов на матчи, которые еще не завершились, не найдено.")
+        await message.answer("Меню.", 
+                            reply_markup = kb.main)
     
 
 @router_user.message(st.ShowPredicts.got_tournament)
@@ -149,21 +168,22 @@ async def my_predicts(message: Message, state: FSMContext):
     if message.text == "Вернуться в меню":
         await message.answer("Меню", reply_markup = kb.main)
         return
-
+    
+    tournament_id = await rq.get_tournament_id_by_name(message.text)
     user_id = await rq.find_userid_by_tgid(message.from_user.id)
-    matches = await rq.get_open_matches_by_tournament_name(message.text)
+    matches = await rq.get_predicted_matches_bytid(tournament_id)
     text = "Ваши текущие предикты на этот турнир:\n\n"
-    flag = True
     for match_ in matches:
-        result = await rq.get_predict_by_ids(user_id, match_.id)
+        result = await rq.get_predict_by_uidmid(user_id, match_.id)
         if not result:
             continue
 
         winner = match_.team_1 if result == 1 else match_.team_2
         text += f"В матче {match_.team_1} vs {match_.team_2}.\nПобеда {winner}.\n\n"
-        flag = False
-    
-    if flag:
+
+    if text == "Ваши текущие предикты на этот турнир:\n\n":
         await message.answer("Предикты не найдены!", reply_markup = kb.main)
-    else:
-        await message.answer(text, reply_markup = kb.main)
+        return
+    
+    await message.answer(text, reply_markup = kb.main)
+    

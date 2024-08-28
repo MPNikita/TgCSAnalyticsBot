@@ -157,3 +157,23 @@ async def opened_matches(tournament_id):
     keyboard.add(KeyboardButton(text = "Отмена"))
     keyboard.adjust(1)
     return keyboard.as_markup(resize_keyboard = True)
+
+
+async def my_predicts_tournament(user_id):
+    keyboard = ReplyKeyboardBuilder()
+    tournaments = await rq.get_ongiong_tournaments_nameid()
+    
+    for tournament in tournaments:
+        counter = 0
+        matches = await rq.get_id_nc_matches_by_tid(tournament.id)
+        for match_id in matches:
+            pred = await rq.get_predict_by_ids(user_id, match_id)
+            if not pred:
+                continue
+            counter += 1
+        if counter != 0:
+            keyboard.add(KeyboardButton(text = tournament.name))
+
+    keyboard.add(KeyboardButton(text = "Вернуться в меню"))
+    keyboard.adjust(1)
+    return keyboard.as_markup(resize_keyboard = True)

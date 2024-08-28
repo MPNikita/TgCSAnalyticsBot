@@ -13,13 +13,13 @@ async def new_user(tg_id, username):
             await session.commit()
 
 
-async def new_predict(tg_id, match_id, result):
+async def new_predict(tg_id, match_id, tournament_id, result):
     async with async_session() as session:
         user = await session.scalar(select(User).where(User.tg_id == tg_id))
         predict = await session.scalar(select(Predict).where(Predict.match_id == match_id, Predict.user_id == user.id))
         
         if not predict:
-            session.add(Predict(user_id = user.id, match_id = match_id, result = result))
+            session.add(Predict(user_id = user.id, match_id = match_id, tournament_id = tournament_id, result = result))
         else:
             await session.execute(update(Predict).values(result = result).where(Predict.id == predict.id))
         await session.commit()
@@ -173,6 +173,11 @@ async def get_ongiong_tournaments():
         return await session.scalars(select(Tournament.name).where(Tournament.time_state == 'Ongoing').order_by(Tournament.id.desc()))
  
 
+async def get_ongiong_tournaments_nameid():
+    async with async_session() as session:
+        return await session.execute(select(Tournament.id, Tournament.name).where(Tournament.time_state == 'Ongoing').order_by(Tournament.id.desc()))
+
+
 async def get_leaderboard(name):
     async with async_session() as session:
         tournament = await session.scalar(select(Tournament).where(Tournament.name == name))
@@ -232,10 +237,31 @@ async def get_predict_by_ids(user_id, match_id):
         return await session.scalar(select(Predict.result).where(Predict.user_id == user_id).where(Predict.match_id == match_id))
 
 
+async def get_predict_by_uidtid(user_id, tournament_id):
+    async with async_session() as session:
+        preds = await session.scalars(select(Predict.id).where(Predict.user_id == user_id).where(Predict.tournament_id == tournament_id))
+        
+
+
 async def get_open_matches_by_tournament_name(tournament_name):
     async with async_session() as session:
         tournament_id = await get_tournament_id_by_name(tournament_name)
         return await session.execute(select(Match.id, Match.team_1, Match.team_2).where(Match.tournament_id == tournament_id).where(Match.result == 0))
+
+
+async def get_id_nc_matches_by_tid(tournament_id):
+    async with async_session() as session:
+        return await session.scalars(select(Match.id).where(Match.tournament_id == tournament_id).where(Match.result == 0))
+    
+
+async def get_predicted_matches_bytid(tournament_id):
+    async with async_session() as session:
+        return await session.execute(select(Match.id, Match.team_1, Match.team_2).where(Match.tournament_id == tournament_id).where(Match.result == 0))
+
+
+async def get_predict_by_uidmid(user_id, match_id):
+    async with async_session() as session:
+        return await session.scalar(select(Predict.result).where(Predict.user_id == user_id).where(Predict.match_id == match_id))
 
 
 async def get_closed_matches(tournament_id):
@@ -294,6 +320,12 @@ async def migrate_data():
                                          result = pred.result))
         
         await session.commit() """
+
+
+async def fill_texts():
+    async with async_session() as session:
+        #migrate tournaments
+        pass
 
 
 async def predict_matches_check(tournament_id):
