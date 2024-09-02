@@ -115,6 +115,7 @@ async def open_matches():
     opened_matches = await rq.opened_matches()
     for match_ in opened_matches:
         keyboard.add(KeyboardButton(text = f'id: {match_.id};{match_.team_1} vs {match_.team_2}'))
+    keyboard.add(KeyboardButton(text = "Отмена"))
     keyboard.adjust(1)
     return keyboard.as_markup(resize_keyboard = True)
 

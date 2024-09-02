@@ -153,6 +153,11 @@ async def update_match_1(message: Message, state: FSMContext):
 
 @router_admin.message(st.MatchUpdate.show_stats)
 async def update_match_2(message: Message, state: FSMContext):
+    if message.text == "Отмена":
+        await message.answer("Действие отменено", reply_markup = ReplyKeyboardRemove())
+        await state.clear()
+        return
+    
     await state.set_state(st.MatchUpdate.match_upd)
     id_str, teams = message.text.split(';')
     team1, team2 = teams.split(' vs ')
