@@ -1,5 +1,5 @@
 from database.structure import async_session
-from database.structure import User, Match, MatchOld, Predict, PredictOld, Tournament, TournamentOld, LeaderboardMain, LeaderboardTournament
+from database.structure import User, Match, MatchOld, Predict, PredictOld, Tournament, TournamentOld, LeaderboardMain, LeaderboardTournament, LeaderboardTournamentOld
 from sqlalchemy import select, update, delete
 import traceback
 
@@ -320,6 +320,20 @@ async def migrate_data():
                                          result = pred.result))
         
         await session.commit() """
+
+        #migrate tournament leadersboard
+
+        leads = await session.scalars(select(LeaderboardTournamentOld))
+
+        for lead in leads:
+            session.add(LeaderboardTournament(id = lead.id,
+                                              user_id = lead.user_id,
+                                              tournament_id = lead.tournament_id,
+                                              correct_predictions = lead.correct_predictions,
+                                              number_of_predictions = lead.number_of_predictions
+                                         ))
+        
+        await session.commit()
 
 
 async def fill_texts():

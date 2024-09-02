@@ -95,12 +95,22 @@ class LeaderboardMain(Base):
     number_of_predictions: Mapped[int] = mapped_column()
 
 
-class LeaderboardTournament(Base):
+""" class LeaderboardTournamentOld(Base):
     __tablename__ = 'leaders_by_tour'
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
     tournament_id: Mapped[int] = mapped_column(ForeignKey('tournaments.id'))
+    correct_predictions: Mapped[int] = mapped_column()
+    number_of_predictions: Mapped[int] = mapped_column()
+ """
+
+class LeaderboardTournament(Base):
+    __tablename__ = 'new_leaders_by_tour'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    tournament_id: Mapped[int] = mapped_column(ForeignKey('new_tournaments.id'))
     correct_predictions: Mapped[int] = mapped_column()
     number_of_predictions: Mapped[int] = mapped_column()
 
